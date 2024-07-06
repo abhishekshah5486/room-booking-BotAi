@@ -1,5 +1,5 @@
-import { Sequelize } from "sequelize";
-import dotenv from 'dotenv';
+const { Sequelize } = require('sequelize');
+const dotenv = require('dotenv');
 
 dotenv.config();
 // Load environment varibles from .env to .process file

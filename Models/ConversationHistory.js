@@ -1,9 +1,10 @@
-import { Model, DataTypes } from 'sequelize';
-import sequelize from '../config/database.js';
+const { Model, DataTypes } = require('sequelize');
+const sequelize = require('../Config/DatabaseConfig.js');
 
 class ConversationHistory extends Model {}
 
 ConversationHistory.init({
+
   UserId: {
     type: DataTypes.STRING,
     allowNull: false,
@@ -25,4 +26,11 @@ ConversationHistory.init({
   modelName: 'ConversationHistory',
 });
 
-export default ConversationHistory;
+module.exports = ConversationHistory;
+
+
+// ConversationId: {
+//     type: DataTypes.UUID,
+//     defaultValue: () => UUIDV4(),
+//     primaryKey: true
+//   },

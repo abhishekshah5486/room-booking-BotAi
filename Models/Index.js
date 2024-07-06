@@ -1,7 +1,7 @@
-import User from './User.js';
-import ConversationHistory from './ConversationHistory.js';
-import Booking from './Booking.js';
-import sequelize from '../Config/database.js';
+const User = require('./User.js');
+const ConversationHistory = require('./ConversationHistory.js');
+const Booking = require('./Booking.js');
+const sequelize = require('../Config/DatabaseConfig.js');
 
 const models = {
   User,
@@ -10,4 +10,4 @@ const models = {
   sequelize,
 };
 
-export default models;
+module.exports = models;

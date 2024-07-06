@@ -1,5 +1,5 @@
-import { Model, DataTypes, UUIDV4 } from 'sequelize';
-import sequelize from '../config/database.js';
+const { Model, DataTypes, UUIDV4 } = require('sequelize');
+const sequelize = require('../Config/DatabaseConfig.js');
 
 class User extends Model{}
 User.init({

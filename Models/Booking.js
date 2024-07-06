@@ -1,5 +1,5 @@
-import { Model, DataTypes } from 'sequelize';
-import sequelize from '../config/database.js';
+const { Model, DataTypes } = require('sequelize');
+const sequelize = require('../Config/DatabaseConfig.js');
 
 class Booking extends Model {}
 
@@ -34,4 +34,4 @@ Booking.init({
   modelName: 'Booking',
 });
 
-export default Booking;
+module.exports = Booking;
