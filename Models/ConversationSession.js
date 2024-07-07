@@ -9,14 +9,6 @@ ConversationSession.init({
         defaultValue: Sequelize.UUIDV4,
         primaryKey: true,
     },  
-    message: {
-        type: DataTypes.TEXT,
-        allowNull: false,
-    },
-    response: {
-        type: DataTypes.TEXT,
-        allowNull: false,
-    },
     state: {
         type: DataTypes.ENUM,
         values: ['initial', 'awaiting_room_selection', 'awaiting_confirmation', 'awaiting_user_email', 'awaiting_user_name'],
