@@ -1,8 +1,8 @@
 const express = require('express');
-const { BotUserChat } =  require('../Controllers/ChatController.js');
+const { processUserMessage } =  require('../Controllers/ChatController2.js');
 
 const router = express.Router();
 
-router.post('/chat', BotUserChat);
+router.post('/chat', processUserMessage);
 
 module.exports = router;

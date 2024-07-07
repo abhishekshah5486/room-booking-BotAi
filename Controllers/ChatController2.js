@@ -1,7 +1,7 @@
 const openai = require('../Utils/openAI.js');
 const axios = require('axios');
 const models = require('../Models/Index.js');
-const { create } = require('../Models/User.js');
+const { create } = require('../Models/UserDetails.js');
 
 const fetchRoomOptions = async () => {
     try {   
@@ -61,7 +61,7 @@ const processUserMessage = async (req, res) => {
                 const prompt = generatePrompt(message, fetchUserConversationHistory);
                 const openAIResponse = await openai.chat.completions.create({
                     model: 'gpt-4o-2024-05-13',
-                    message: [
+                    message: [ 
                         {
                             role: 'user',
                             content: prompt

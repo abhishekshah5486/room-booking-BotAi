@@ -1,12 +1,15 @@
 const { Model, DataTypes, UUIDV4 } = require('sequelize');
 const sequelize = require('../Config/DatabaseConfig.js');
 
-class User extends Model{}
-User.init({
-    UserID: {
+class UserDetails extends Model{}
+UserDetails.init({
+    ConversationId: {
         type: DataTypes.UUID,
-        defaultValue: () => UUIDV4(),
-        primaryKey: true
+        allowNull: false,
+        references: {
+            model: 'ConversationHistories',
+            key: 'ConversationId'
+        }
     },
     Name: {
         type: DataTypes.STRING,
@@ -18,7 +21,8 @@ User.init({
     }
 }, {
     sequelize,
-    modelName: 'User'
+    modelName: 'User',
+    timestamps: true,
 })
 
-module.exports = User;
+module.exports = UserDetails;

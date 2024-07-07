@@ -1,4 +1,4 @@
-const User = require('./User.js');
+const User = require('./UserDetails.js');
 const ConversationHistory = require('./ConversationHistory.js');
 const Booking = require('./Booking.js');
 const sequelize = require('../Config/DatabaseConfig.js');

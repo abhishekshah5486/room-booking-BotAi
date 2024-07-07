@@ -1,7 +1,7 @@
 const openai = require('../Utils/openAI.js');
 const axios = require('axios');
 const models = require('../Models/Index.js');
-const { use } = require('../Routes/Chat.js');
+const { use } = require('../Routes/Chat23.js');
 
 const { ConverationHistory, User, Booking } = models;
 // Function to fetch room options from an external API
