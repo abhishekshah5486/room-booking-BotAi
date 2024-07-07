@@ -1,18 +1,14 @@
 const { Model, DataTypes, Sequelize } = require('sequelize');
 const sequelize = require('../Config/DatabaseConfig.js');
 
-class ConversationHistory extends Model {}
+class ConversationSession extends Model {}
 
-ConversationHistory.init({
-    conversationId: {
+ConversationSession.init({
+    sessionId: {
         type: DataTypes.UUID,
         defaultValue: Sequelize.UUIDV4,
         primaryKey: true,
     },  
-    userId: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-    },
     message: {
         type: DataTypes.TEXT,
         allowNull: false,
@@ -33,11 +29,11 @@ ConversationHistory.init({
     },
     }, {
     sequelize,
-    modelName: 'ConversationHistory',
+    modelName: 'ConversationSession',
     timestamps: true,
 });
 
-module.exports = ConversationHistory;
+module.exports = ConversationSession;
 
 
 // ConversationId: {
