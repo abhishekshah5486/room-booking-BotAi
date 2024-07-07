@@ -10,7 +10,7 @@ Booking.init({
         allowNull: false,
         primaryKey: true,
     },
-    ConversationId: {
+    conversationId: {
         type: DataTypes.UUID,
         allowNull: false,
         references: {

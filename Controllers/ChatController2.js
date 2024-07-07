@@ -39,18 +39,55 @@ const generatePrompt = (userMessage, conversationHistory) => {
     return prompt;
 };
 const processUserMessage = async (req, res) => {
-    const userId = req.body.userId;
+    const conversationId = req.body.conversationId;
     const message = req.body.message;
 
     try {
-        const fetchUserConversationHistory = await models.ConversationHistory.findAll({where : {UserId: userId}});
-        const currentState  = fetchUserConversationHistory.length > 0 ? fetchUserConversationHistory[fetchUserConversationHistory.length - 1].State : 'initial';
+        const fetchUserConversationHistory = await models.ConversationHistory.findOne({where : {conversationId: conversationId}});
+        const currentState  = fetchUserConversationHistory.state;
 
         let botResponse;
-        let newState = 'initial';
+        let newState;
         let selectedRoomId; 
 
-        if (currentState === 'initial'){
+        if (currentState === 'awaiting_user_name') {
+            if (message.trim().length === 0){
+                botResponse = 'Please provide a valid name to proceed.'
+            } else {
+                const name = message.trim();
+                await models.UserDetails.create({
+                    conversationId: conversationId,
+                    fullName: name
+                })
+                botResponse = `Thank you, ${name}. Could you please provide your email ID so I can assist you better?`;
+                newState = 'awaiting_user_email';
+            }
+        }
+        else if (currentState === 'awaiting_user_email'){
+            const userInputEmail = message.trim();
+            const validateUserEmail = await openai.chat.completions.create({
+                model: 'gpt-4o-2024-05-13',
+                message: [ 
+                    {
+                        role: 'user',
+                        content: `Validate whether the email address ${userInputEmail} is valid or not. Respond with 'Yes' if it is valid, and 'No' if it is not.`
+                    }
+                ]
+            }); 
+            // Valid Email Address
+            if (validateUserEmail.choices[0].message.content.toLowerCase().includes("yes")){
+                await models.UserDetails.update(
+                    {email: userInputEmail},
+                    {where: {conversationId: conversationId}}
+                );
+                botResponse = 'Thank you! How can I assist you today?';
+                newState = 'initial';
+            } else {
+                botResponse = 'It looks like the email ID you provided is incomplete. Could you please provide a valid email ID?';
+                newState = 'awaiting_user_email';
+            }
+        }
+        else if (currentState === 'initial'){
             if (message.toLowerCase().includes('book') ||
                 message.toLowerCase().includes('room')){
                 // Fetch room options from external API
@@ -68,7 +105,7 @@ const processUserMessage = async (req, res) => {
                         }
                     ]
                 });
-                botResponse = openAIResponse.data.choices[0].message.content;
+                botResponse = openAIResponse.choices[0].message.content;
                 newState = 'initial';
             }
         }

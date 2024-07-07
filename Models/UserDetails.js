@@ -3,7 +3,7 @@ const sequelize = require('../Config/DatabaseConfig.js');
 
 class UserDetails extends Model{}
 UserDetails.init({
-    ConversationId: {
+    conversationId: {
         type: DataTypes.UUID,
         allowNull: false,
         references: {
@@ -11,13 +11,13 @@ UserDetails.init({
             key: 'ConversationId'
         }
     },
-    Name: {
+    fullName: {
         type: DataTypes.STRING,
-        allowNull: false
+        allowNull: true
     },
-    Email: {
+    email: {
         type: DataTypes.STRING,
-        allowNull: false
+        allowNull: true
     }
 }, {
     sequelize,

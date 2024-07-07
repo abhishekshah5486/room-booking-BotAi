@@ -16,7 +16,6 @@ const fetchRoomOptions = async () => {
         return null;
     }
 }
-
 // Function to simulate a room booking using the external API
 const createRoomBooking = async (roomId, fullName, email, nights) => {
     try {

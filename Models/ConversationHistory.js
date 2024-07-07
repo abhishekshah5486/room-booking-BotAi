@@ -4,30 +4,30 @@ const sequelize = require('../Config/DatabaseConfig.js');
 class ConversationHistory extends Model {}
 
 ConversationHistory.init({
-    ConversationId: {
+    conversationId: {
         type: DataTypes.UUID,
         defaultValue: Sequelize.UUIDV4,
         primaryKey: true,
     },  
-    UserId: {
+    userId: {
         type: DataTypes.INTEGER,
         allowNull: false,
     },
-    Message: {
+    message: {
         type: DataTypes.TEXT,
         allowNull: false,
     },
-    Response: {
+    response: {
         type: DataTypes.TEXT,
         allowNull: false,
     },
-    State: {
+    state: {
         type: DataTypes.ENUM,
-        values: ['initial', 'awaiting_room_selection', 'awaiting_confirmation', 'awaiting_user_details'],
+        values: ['initial', 'awaiting_room_selection', 'awaiting_confirmation', 'awaiting_user_email', 'awaiting_user_name'],
         allowNull: false,
-        defaultValue: 'initial'
+        defaultValue: 'awaiting_user_name'
     },
-    Timestamp: {
+    timestamp: {
         type: DataTypes.DATE,
         defaultValue: DataTypes.NOW,
     },
