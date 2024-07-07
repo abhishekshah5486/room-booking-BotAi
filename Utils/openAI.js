@@ -13,5 +13,4 @@ dotenv.config({ path: envPath });
 const openAIClient = new openai({
     apiKey: process.env.OPENAI_API_KEY
 })
-
 module.exports = openAIClient;

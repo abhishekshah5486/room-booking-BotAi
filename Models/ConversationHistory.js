@@ -1,10 +1,9 @@
-const { Model, DataTypes } = require('sequelize');
+const { Model, DataTypes, Sequelize } = require('sequelize');
 const sequelize = require('../Config/DatabaseConfig.js');
 
 class ConversationHistory extends Model {}
 
 ConversationHistory.init({
-
   UserId: {
     type: DataTypes.STRING,
     allowNull: false,
@@ -16,6 +15,12 @@ ConversationHistory.init({
   Response: {
     type: DataTypes.TEXT,
     allowNull: false,
+  },
+  State: {
+    type: DataTypes.ENUM,
+    values: ['initial', 'awaiting_room_selection', 'awaiting_confirmation'],
+    allowNull: false,
+    defaultValue: 'initial'
   },
   Timestamp: {
     type: DataTypes.DATE,
