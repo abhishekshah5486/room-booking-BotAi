@@ -3,7 +3,8 @@ const app = express();
 const sequelize = require('./Config/DatabaseConfig.js');
 app.use(express.json());
 
-const chatRoutes = require('./Routes/Chat.js');
+const chatRoute1 = require('./Routes/Chat.js');
+const chatRoute2 = require('./Routes/Chat2.js');
 
 // Sync database
 sequelize.sync({ force: true }).then(() => {
@@ -13,7 +14,8 @@ sequelize.sync({ force: true }).then(() => {
 });
 
   
-app.use('/api', chatRoutes);
+app.use('/api', chatRoute1);
+app.use('/api', chatRoute2);
 
 const port = 3000;
 app.listen(port, () => {
