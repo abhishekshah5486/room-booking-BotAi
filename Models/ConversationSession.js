@@ -27,9 +27,3 @@ ConversationSession.init({
 
 module.exports = ConversationSession;
 
-
-// ConversationId: {
-//     type: DataTypes.UUID,
-//     defaultValue: () => UUIDV4(),
-//     primaryKey: true
-//   },

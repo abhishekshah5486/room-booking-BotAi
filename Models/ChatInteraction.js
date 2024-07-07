@@ -1,7 +1,9 @@
 const { Model, DataTypes, Sequelize } = require('sequelize');
 const sequelize = require('../Config/DatabaseConfig.js');
+const ConversationSession = require('./ConversationSession');
 
 class ChatInteraction extends Model {}
+
 ChatInteraction.init({
     interactionId: {
         type: DataTypes.UUID,
@@ -33,5 +35,5 @@ ChatInteraction.init({
     modelName: 'ChatInteraction',
     timestamps: true,
 })
-
+ChatInteraction.belongsTo(ConversationSession, { foreignKey: 'sessionId' });
 module.exports = ChatInteraction;

@@ -28,9 +28,13 @@ const createRoomBooking = async (roomId, fullName, email, nights) => {
         return null;
     }
 }
-const generatePrompt = (userMessage, conversationHistory) => {
-    let prompt = "You are a helpful ChatBot AI assistant assisting with resort room bookings at Bot9 Palace.\n";
-    conversationHistory.forEach(conv => {
+const generatePrompt = async (userMessage, conversationSession) => {
+    const userDetails = await models.UserDetails.findOne({where: {sessionId: conversationSession.sessionId}});
+    const userName = userDetails ? userDetails.fullName : 'Guest';
+    let prompt = `You are a helpful ChatBot AI assistant assisting ${userName} with resort room bookings at Bot9 Palace.\n`;
+
+    const chatInteractions = await fetchSessionWithInteractions(conversationSession.sessionId);
+    chatInteractions.forEach(conv => {
         prompt += `User: ${conv.message}\n`;
         prompt += `Bot: ${conv.botMessage}\n`;
     });
@@ -38,13 +42,28 @@ const generatePrompt = (userMessage, conversationHistory) => {
 
     return prompt;
 };
+
+async function fetchSessionWithInteractions(sessionId){
+    const session = await models.ConversationSession.findByPk(sessionId, {
+        include: models.ChatInteraction,
+        order: [['timestamp', 'ASC']]
+    });
+    const chatInteractions = session.ChatInteractions;
+    return chatInteractions;
+}
+
+
 const processUserMessage = async (req, res) => {
-    const conversationId = req.body.conversationId;
+    const sessionId = req.body.sessionId;
     const message = req.body.message;
 
     try {
-        const fetchUserConversationHistory = await models.ConversationHistory.findOne({where : {conversationId: conversationId}});
-        const currentState  = fetchUserConversationHistory.state;
+        let conversationSession = await models.ConversationSession.findOne({where: {sessionId: sessionId}});
+        if (!conversationSession){
+            conversationSession = await models.ConversationSession.create({});
+            sessionId = conversationSession.sessionId;
+        }
+        const currentState = conversationSession.state;
 
         let botResponse;
         let newState;
@@ -56,7 +75,7 @@ const processUserMessage = async (req, res) => {
             } else {
                 const name = message.trim();
                 await models.UserDetails.create({
-                    conversationId: conversationId,
+                    sessionId: sessionId,
                     fullName: name
                 })
                 botResponse = `Thank you, ${name}. Could you please provide your email ID so I can assist you better?`;
@@ -67,7 +86,7 @@ const processUserMessage = async (req, res) => {
             const userInputEmail = message.trim();
             const validateUserEmail = await openai.chat.completions.create({
                 model: 'gpt-4o-2024-05-13',
-                message: [ 
+                messages: [ 
                     {
                         role: 'user',
                         content: `Validate whether the email address ${userInputEmail} is valid or not. Respond with 'Yes' if it is valid, and 'No' if it is not.`
@@ -78,7 +97,7 @@ const processUserMessage = async (req, res) => {
             if (validateUserEmail.choices[0].message.content.toLowerCase().includes("yes")){
                 await models.UserDetails.update(
                     {email: userInputEmail},
-                    {where: {conversationId: conversationId}}
+                    {where: {sessionId: sessionId}}
                 );
                 botResponse = 'Thank you! How can I assist you today?';
                 newState = 'initial';
@@ -88,17 +107,43 @@ const processUserMessage = async (req, res) => {
             }
         }
         else if (currentState === 'initial'){
-            if (message.toLowerCase().includes('book') ||
-                message.toLowerCase().includes('room')){
+            const bookingIntentPrompt = `User: "${message}".\nAnalyze if the input intends to book a room. Respond with "Yes" if the input indicates a desire to book a room, otherwise respond with "No."`;
+
+            // Checking booking intent using openai api
+            const validateRoomBookingIntent = await openai.chat.completions.create({
+                model: 'gpt-4o-2024-05-13',
+                messages: [ 
+                    {
+                        role: 'user',
+                        content: bookingIntentPrompt
+                    }
+                ]
+            });
+            // Checking room booking intent using keywords
+            function analyzeBookingIntent(input) {
+                const keywords = ["book", "reserve", "room", "stay", "want", "need"];
+                const normalizedInput = input.toLowerCase();
+            
+                for (let keyword of keywords) {
+                    if (normalizedInput.includes(keyword)) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+            const keywordRoomBookingIntent = analyzeBookingIntent(message).toLowerCase();
+            const aiRoomBookingIntent = validateRoomBookingIntent.choices[0].message.content.toLowerCase().includes("yes");
+            const combinedIntent = (keywordRoomBookingIntent || aiRoomBookingIntent);
+            if (combinedIntent){
                 // Fetch room options from external API
                 const roomOptions = await fetchRoomOptions();
                 botResponse = `Sure. Here are the available rooms:\n${roomOptions.data.map(room => `Room ${room.id}: ${room.name}\n${room.description}\n`).join('\n')}\nPlease choose a room number.`;
                 newState = 'awaiting_room_selection';
             } else {
-                const prompt = generatePrompt(message, fetchUserConversationHistory);
+                const prompt = await generatePrompt(message, conversationSession);
                 const openAIResponse = await openai.chat.completions.create({
                     model: 'gpt-4o-2024-05-13',
-                    message: [ 
+                    messages: [ 
                         {
                             role: 'user',
                             content: prompt

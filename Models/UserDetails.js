@@ -3,12 +3,12 @@ const sequelize = require('../Config/DatabaseConfig.js');
 
 class UserDetails extends Model{}
 UserDetails.init({
-    conversationId: {
+    sessionId: {
         type: DataTypes.UUID,
         allowNull: false,
         references: {
-            model: 'ConversationHistories',
-            key: 'ConversationId'
+            model: 'ConversationSession',
+            key: 'sessionId'
         }
     },
     fullName: {

@@ -1,5 +1,6 @@
 const { Model, DataTypes } = require('sequelize');
 const sequelize = require('../Config/DatabaseConfig.js');
+const ConversationSession = require('./ConversationSession');
 
 class Booking extends Model {}
 
@@ -10,12 +11,12 @@ Booking.init({
         allowNull: false,
         primaryKey: true,
     },
-    conversationId: {
+    sessionId: {
         type: DataTypes.UUID,
         allowNull: false,
         references: {
-            model: 'ConversationHistories',
-            key: 'ConversationId'
+            model: 'ConversationSession',
+            key: 'sessionId'
         }
     },
     roomId: {
@@ -47,5 +48,5 @@ Booking.init({
     modelName: 'Booking',
     timestamps: true,
 });
-
+Booking.belongsTo(ConversationSession, { foreignKey: 'sessionId' });
 module.exports = Booking;

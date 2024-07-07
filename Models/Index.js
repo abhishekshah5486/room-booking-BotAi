@@ -1,12 +1,14 @@
-const User = require('./UserDetails.js');
-const ConversationHistory = require('./ConversationSession.js');
+const UserDetails = require('./UserDetails.js');
+const ConversationSession = require('./ConversationSession.js');
 const Booking = require('./Booking.js');
 const sequelize = require('../Config/DatabaseConfig.js');
+const ChatInteraction = require('./ChatInteraction.js');
 
 const models = {
-  User,
-  ConversationHistory,
+  UserDetails,
+  ConversationSession,
   Booking,
+  ChatInteraction,
   sequelize,
 };
 
