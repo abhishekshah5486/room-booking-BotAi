@@ -5,7 +5,7 @@ class Booking extends Model {}
 
 Booking.init({
   bookingId: {
-    type: DataTypes.STRING,
+    type: DataTypes.INTEGER,
     allowNull: false,
     primaryKey: true,
   },
@@ -25,7 +25,7 @@ Booking.init({
     type: DataTypes.STRING,
     allowNull: false,
   },
-  timestamp: {
+  date: {
     type: DataTypes.DATE,
     defaultValue: DataTypes.NOW,
   },

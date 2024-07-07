@@ -1,6 +1,7 @@
 const openai = require('../Utils/openAI.js');
 const axios = require('axios');
 const models = require('../Models/Index.js');
+const { create } = require('../Models/User.js');
 
 const fetchRoomOptions = async () => {
     try {   
@@ -42,8 +43,8 @@ const processUserMessage = async (req, res) => {
     const message = req.body.message;
 
     try {
-        const fetchUserConversationHistory = models.ConversationHistory.findAll({where : {UserId: userId}});
-        const currentState  = fetchUserConversationHistory.length > 0 ? fetchUserConversationHistory[fetchUserConversationHistory.length - 1].state : 'initial';
+        const fetchUserConversationHistory = await models.ConversationHistory.findAll({where : {UserId: userId}});
+        const currentState  = fetchUserConversationHistory.length > 0 ? fetchUserConversationHistory[fetchUserConversationHistory.length - 1].State : 'initial';
 
         let botResponse;
         let newState = 'initial';
@@ -53,7 +54,7 @@ const processUserMessage = async (req, res) => {
             if (message.toLowerCase().includes('book') ||
                 message.toLowerCase().includes('room')){
                 // Fetch room options from external API
-                const roomOptions = fetchRoomOptions();
+                const roomOptions = await fetchRoomOptions();
                 botResponse = `Sure. Here are the available rooms:\n${roomOptions.data.map(room => `Room ${room.id}: ${room.name}\n${room.description}\n`).join('\n')}\nPlease choose a room number.`;
                 newState = 'awaiting_room_selection';
             } else {
@@ -72,29 +73,61 @@ const processUserMessage = async (req, res) => {
             }
         }
         else if (currentState === 'awaiting_room_selection'){
-            const roomOptions = fetchRoomOptions();
+            const roomOptions = await fetchRoomOptions();
             const selectedRoom = roomOptions.data.find((room) => room.id.toString() === message.trim());
             if (selectedRoom){
                 botResponse = `You have selected room ${selectedRoom.id}.\n
                 The price is ${selectedRoom.price} per night.\nPlease confirm your booking by typing 'confirm' or by typing 'cancel'.`;
                 newState = 'awaiting_confirmation';
                 selectedRoomId = selectedRoom.id;
+
+                // Store pre-booking details in Booking model
+                await models.Booking.create({
+                    bookingId: Math.floor(Math.random() * 10000),
+                    userId,
+                    roomId: selectedRoomId,
+                    nights: 1,
+                    status: 'awaiting'
+                });
+
             } else {
                 botResponse = `Invalid room number. Please choose a valid room number from the list:\n${roomOptions.data.map(room => room.number).join(', ')}.`;
                 newState = 'awaiting_room_selection';
             }
         }
         else if (currentState === 'awaiting_confirmation'){
-            if (userMessage.toLowerCase() === 'confirm') {
-                // Simulate booking confirmation
-                const bookingResponse = await createRoomBooking(selectedRoomId, 'John Doe', 'johndoe@example.com', 3);
-                const bookingId = Math.floor(Math.random() * 10000);
-                botResponse = `Your booking is confirmed! Your booking ID is ${bookingId}.\nThank you! If you need any further assistance, feel free to ask.`;
+            if (message.toLowerCase().trim() === 'confirm') {
+                // Retrieve latest booking for the user
+                const latestBooking = await models.Booking.findOne({
+                    where: { userId },
+                    order: [['createdAt', 'DESC']]
+                });
+                if (latestBooking && latestBooking.status === 'awaiting'){
+                    const bookingResponse = createRoomBooking(latestBooking.roomId, 'John Doe', 'johndoe@example.com', latestBooking.nights);
+
+                    if (bookingResponse){
+                        await models.Booking.update({ status: 'confirmed' }, {
+                            where: { bookingId: latestBooking.bookingId }
+                        });
+                        botResponse = `Your booking is confirmed! Your booking ID is ${bookingResponse.bookingId}. Thank you! If you need any further assistance, feel free to ask.`;
+                    }
+                    else  botResponse = `There was an error processing your booking. Please try again later or contact support.`;
+                }
                 newState = 'initial';
-            } else if (userMessage.toLowerCase() === 'cancel') {
-                botResponse = "Your booking has been cancelled. If you need any further assistance, feel free to ask.";
+            }
+            else if (message.toLowerCase().trim() === 'cancel'){
+                const latestBooking = await models.Booking.findOne({
+                    where: { userId },
+                    order: [['createdAt', 'DESC']]
+                });
+                if (latestBooking && latestBooking.status === 'awaiting'){
+                    await models.Booking.update({ status: 'cancelled' }, {
+                        where: { bookingId: latestBooking.bookingId }
+                    });
+                    botResponse = "Your booking has been cancelled. If you need any further assistance, feel free to ask.";
+                }
                 newState = 'initial';
-            } else {
+            }else {
                 botResponse = "Please type 'confirm' to proceed with the booking or 'cancel' to cancel the booking.";
                 newState = 'awaiting_confirmation';
             }
@@ -106,4 +139,6 @@ const processUserMessage = async (req, res) => {
         res.status(500).json({error: 'Internal Server Error.'});
     }
 }
-module.exports = processUserMessage;
+module.exports = {
+    processUserMessage,
+};
