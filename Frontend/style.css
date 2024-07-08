@@ -51,7 +51,7 @@ body {
     border-bottom-left-radius: 15px;
     border-bottom-right-radius: 15px;
 } */
-
+/* 
 * {
     margin: 0;
     padding: 0;
@@ -151,4 +151,118 @@ body {
 
 .message.bot-message {
     text-align: left;
+} */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    height: 100vh;
+    width: 100vw;
+    background-color: #021028;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.chat-bot-container {
+    height: 90vh;
+    width: 50vw;
+    border-radius: 20px;
+    background-color: white;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.chat-bot-header {
+    background-color: #093ca0;
+    height: 10%;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.chat-bot-header-content {
+    display: flex;
+    flex-direction: column;
+    color: white;
+    margin-left: 20px;
+    gap: 5px;
+}
+
+.chat-bot-header-content h3 {
+    font-size: 18px;
+    font-family: Arial, sans-serif;
+}
+
+.chat-bot-header-content p {
+    font-size: 14px;
+}
+
+.chat-window {
+    background-color: #eff4fa;
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.chat-input-container {
+    height: 10%;
+    width: 100%;
+    border-top: 1px solid #d5dee5;
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+    background-color: white;
+}
+
+.chat-input {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    gap: 10px;
+}
+
+.chat-input input {
+    flex: 1;
+    padding: 10px;
+    font-size: 16px;
+    border-radius: 10px;
+    border: 1px solid #d5dee5;
+}
+
+.chat-input button {
+    background-color: #093ca0;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 10px 20px;
+    cursor: pointer;
+}
+
+.message {
+    padding: 10px;
+    border-radius: 10px;
+    max-width: 80%;
+    display: inline-block;
+}
+
+.user-message {
+    background-color: #d1e7ff;
+    align-self: flex-end;
+}
+
+.bot-message {
+    background-color: #f1f1f1;
+    align-self: flex-start;
 }

@@ -1,17 +1,31 @@
 const express = require('express');
 const app = express();
 const sequelize = require('./Config/DatabaseConfig.js');
+const models = require('./Models/Index.js');
 app.use(express.json());
 
 // const chatRoute1 = require('./Routes/Chat.js');
 const chatRoute = require('./Routes/Chat.js');
 
+async function syncModels() {
+    try {
+      await models.ConversationSession.sync();
+      await models.UserDetails.sync();
+      await models.Booking.sync();
+      await models.ChatInteraction.sync();
+      console.log('Database tables synced successfully.');
+    } catch (error) {
+      console.error('Error syncing database tables:', error);
+    }
+}
+// Call the syncModels function to ensure proper table order
+syncModels();
 // Sync database
-sequelize.sync({ force: true }).then(() => {
-    console.log('Database Created Successfully.');
-  }).catch((err) => {
-    console.log('Error creating database:', err);
-});
+// sequelize.sync().then(() => {
+//     console.log('Database Created Successfully.');
+//   }).catch((err) => {
+//     console.log('Error creating database:', err);
+// });
 
   
 // app.use('/api', chatRoute1);
