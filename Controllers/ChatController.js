@@ -4,6 +4,7 @@ const models = require('../Models/Index.js');
 const { create } = require('../Models/UserDetails.js');
 const { use } = require('../Routes/Chat.js');
 const { response } = require('express');
+const validator = require('validator');
 
 const fetchRoomOptions = async () => {
     try {   
@@ -33,12 +34,12 @@ const createRoomBooking = async (roomId, fullName, email, nights) => {
 const generatePrompt = async (userMessage, conversationSession) => {
     const userDetails = await models.UserDetails.findOne({where: {sessionId: conversationSession.sessionId}});
     const userName = userDetails ? userDetails.fullName : 'Guest';
-    let prompt = `You are a helpful ChatBot AI assistant assisting ${userName} with resort room bookings at Bot9 Palace.\n`;
+    let prompt = `You are ChatBot9. A helpful ChatBot AI assistant assisting ${userName} with resort room bookings at Bot9 Palace.\n`;
 
     const chatInteractions = await fetchSessionWithInteractions(conversationSession.sessionId);
     chatInteractions.forEach(conv => {
         prompt += `User: ${conv.message}\n`;
-        prompt += `Bot: ${conv.botMessage}\n`;
+        prompt += `Bot: ${conv.response}\n`;
     });
     prompt += `User: ${userMessage}\nBot:`;
 
@@ -46,14 +47,23 @@ const generatePrompt = async (userMessage, conversationSession) => {
 };
 
 async function fetchSessionWithInteractions(sessionId){
-    const session = await models.ConversationSession.findByPk(sessionId, {
-        include: models.ChatInteraction,
-        order: [['timestamp', 'ASC']]
-    });
-    const chatInteractions = session.ChatInteractions;
+    const chatInteractions = await models.ChatInteraction.findAll({where: {sessionId: sessionId}});
     return chatInteractions;
 }
 
+// General chat completion function
+async function generalizedChatCompletion(modelName, message){
+    const response  =  await openai.chat.completions.create({
+        model: modelName,
+        messages: [
+            {
+                role: 'user',
+                content: message
+            }
+        ]
+    })
+    return response;
+}
 const processUserMessage = async (req, res) => {
     let sessionId = req.body.sessionId;
     const message = req.body.message;
@@ -70,7 +80,24 @@ const processUserMessage = async (req, res) => {
         let newState;
         let selectedRoomId; 
 
-        if (currentState === 'awaiting_user_name') {
+        if (currentState === 'start'){
+            const prompt = `You are ChatBot9, a helpful AI assistant assisting a user with resort room   bookings at Bot9 Palace.
+                            Analyze the following message to determine the user's intent:
+                            "${message}"
+                            If the user initiates the conversation with a greeting (e.g., says "hi", "hello") or some kind of query , respond politely and ask for their name to proceed ahead.
+                            If the user inputs a conversation-ending message (e.g., says "goodbye", "bye", or uses inappropriate language), respond accordingly or terminate the conversation/chat if necessary.
+                            If the user inputs any confusing message or vague message,provide a polite and unique response for clarification (e.g., "I'm sorry, I didn't quite understand that. Could you please clarify?").
+                            If the user seems to spam with irrelevant messages repeatedly, prompt them to stay on topic and inform them that the chat will be terminated if the irrelevant messages continue
+                            Complete the conversation:
+                            User: "${message}"\n
+                            Bot: `
+            const conversationStartResponse = await generalizedChatCompletion('gpt-3.5-turbo', prompt);
+            botResponse = conversationStartResponse.choices[0].message.content;
+            if (botResponse.toLowerCase().includes('name')){
+                newState = 'awaiting_user_name';
+            }
+        }
+        else if (currentState === 'awaiting_user_name') {
             if (message.trim().length === 0){
                 botResponse = 'Please provide a valid name to proceed.'
             } else {
@@ -85,25 +112,32 @@ const processUserMessage = async (req, res) => {
         }
         else if (currentState === 'awaiting_user_email'){
             const userInputEmail = message.trim();
-            const validateUserEmail = await openai.chat.completions.create({
-                model: 'gpt-3.5-turbo',
-                messages: [ 
-                    {
-                        role: 'user',
-                        content: `Validate whether the email address ${userInputEmail} is valid or not. Respond with 'Yes' if it is valid, and 'No' if it is not.`
-                    }
-                ]
-            }); 
-            // Valid Email Address
-            if (validateUserEmail.choices[0].message.content.toLowerCase().includes("yes")){
+            const validateUserEmail = validator.isEmail(userInputEmail);
+            if (validateUserEmail){
                 await models.UserDetails.update(
                     {email: userInputEmail},
                     {where: {sessionId: sessionId}}
                 );
                 botResponse = 'Thank you! How can I assist you today?';
                 newState = 'initial';
-            } else {
-                botResponse = 'It looks like the email ID you provided is incomplete. Could you please provide a valid email ID?';
+            }
+            else {
+                const responses = [
+                    "It seems the email ID you entered is incomplete. Could you please provide a valid email?",
+                    "I'm sorry, but the email ID you provided appears to be incomplete. Please enter a valid email address.",
+                    "The email you entered doesn't seem complete. Please provide a valid email address.",
+                    "It looks like the email address is missing some information. Please enter a complete email ID.",
+                    "Could you please enter a complete email address? The one you provided seems incomplete.",
+                    "I didn't catch that email address correctly. Please enter a complete and valid email ID.",
+                    "I'm sorry, I need a valid email address to proceed. Please enter one that is complete.",
+                    "The email you entered is not complete. Please provide a valid and complete email ID."
+                ];
+                
+                // Select a random response
+                const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+                
+                botResponse = randomResponse;
+                
                 newState = 'awaiting_user_email';
             }
         }
@@ -111,15 +145,7 @@ const processUserMessage = async (req, res) => {
             const bookingIntentPrompt = `User: "${message}".\nAnalyze if the user intends to book a room. Respond with "Yes" if the user indicates a desire to book a room, otherwise respond with "No."`;
 
             // Checking booking intent using openai api
-            const validateRoomBookingIntent = await openai.chat.completions.create({
-                model: 'gpt-3.5-turbo',
-                messages: [ 
-                    {
-                        role: 'user',
-                        content: bookingIntentPrompt
-                    }
-                ]
-            });
+            const validateRoomBookingIntent = await generalizedChatCompletion('gpt-3.5-turbo', bookingIntentPrompt);
             // Checking room booking intent using keywords
             function analyzeBookingIntent(input) {
                 const keywords = ["book", "reserve", "room", "stay", "want", "need"];
@@ -142,26 +168,19 @@ const processUserMessage = async (req, res) => {
                 newState = 'awaiting_room_selection';
             } else {
                 const prompt = await generatePrompt(message, conversationSession);
-                const openAIResponse = await openai.chat.completions.create({
-                    model: 'gpt-3.5-turbo',
-                    messages: [ 
-                        {
-                            role: 'user',
-                            content: prompt
-                        }
-                    ]
-                });
+                const openAIResponse = await generalizedChatCompletion('gpt-3.5-turbo', prompt);
                 botResponse = openAIResponse.choices[0].message.content;
                 newState = 'initial';
             }
         }
         else if (currentState === 'awaiting_room_selection'){
             const roomOptions = await fetchRoomOptions();
+
             const selectedRoom = roomOptions.data.find((room) => room.id.toString() === message.trim());
             if (selectedRoom){
                 botResponse = `You have selected room ${selectedRoom.id}.\n
-                The price is ${selectedRoom.price} per night.\nPlease confirm your booking by typing 'confirm' or by typing 'cancel'.`;
-                newState = 'awaiting_confirmation';
+                The price is ${selectedRoom.price} per night.\nFor how many nights do you wish to stay?.`;
+                newState = 'awaiting_nights_selection';
                 selectedRoomId = selectedRoom.id;
 
                 const userDetails = await models.UserDetails.findOne({where: {sessionId: conversationSession.sessionId}});
@@ -171,7 +190,6 @@ const processUserMessage = async (req, res) => {
                     roomId: selectedRoomId,
                     fullName: userDetails.fullName,
                     email: userDetails.email,
-                    nights: 1,
                     status: 'awaiting'
                 });
 
@@ -180,22 +198,77 @@ const processUserMessage = async (req, res) => {
                 newState = 'awaiting_room_selection';
             }
         }
-        else if (currentState === 'awaiting_confirmation'){
-            if (message.toLowerCase().trim() === 'confirm') {
-                // Retrieve latest booking for the user
-                const latestBooking = await models.Booking.findOne({
+        else if (currentState === 'awaiting_nights_selection'){
+
+            const prompt = `Analyse the number of nights the user wants to stay based on their input.
+                            Complete the conversation below:
+                            (Please ensure that the BotResponse strictly evaluates to a number and not text.)
+                            Bot: "How many nights would you like to stay or book a room for?"
+                            User: "${message}"
+                            BotResponse: 
+                            `
+            const stayNightsIntentPromptResponse = await generalizedChatCompletion('gpt-3.5-turbo', prompt);
+            const stayNightsIntentPromptResponseContent  = stayNightsIntentPromptResponse.choices[0].message.content;
+            console.log(stayNightsIntentPromptResponseContent);
+            // Regular expression to match numbers
+            let numberRegex = /\d+/;
+
+            // Extract the number from the text
+            let matches = stayNightsIntentPromptResponseContent.match(numberRegex);
+            if (matches){
+                const numberOfNights = parseInt(matches[0], 10);
+                const bookingDetails = await models.Booking.findOne({
                     where: { sessionId: conversationSession.sessionId },
                     order: [['createdAt', 'DESC']]
                 });
+                await models.Booking.update({nights: numberOfNights}, {where: {bookingId: bookingDetails.bookingId}});
+                botResponse = `Awesome! I've updated your booking to ${numberOfNights} nights.\nWould you like to confirm this booking?`;
+                newState =  'awaiting_confirmation';
+            }else {
+                const responses = [
+                    "Could you please clarify how many nights you'd like to stay?",
+                    "I'm sorry, I didn't catch the number of nights. Could you repeat that?",
+                    "It seems I didn't quite get the number of nights. Can you confirm?",
+                    "I'm not sure I understood the number of nights correctly. Could you specify?",
+                    "I didn't catch the exact number of nights. Could you clarify?",
+                    "It seems there was an issue understanding the number of nights. Can you tell me again?",
+                    "I didn't quite get that. How many nights were you thinking of staying?",
+                    "I'm sorry, I need to confirm the number of nights. Can you please specify?",
+                    "Could you clarify the number of nights for your booking?"
+                ];
+                
+                // Select a random response
+                const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+                
+                botResponse = randomResponse;    
+            }
+
+        }
+        else if (currentState === 'awaiting_confirmation'){
+            const confirmationIntentPrompt = `Bot: Do you confirm your booking?
+                                              User: "${message}"
+                                              Analyze if the user's response indicates a desire to confirm the room booking. Respond with "Yes" if the user intends to confirm the room booking, otherwise respond with "No."`;
+            const confirmationIntentPromptResponse = await generalizedChatCompletion('gpt-3.5-turbo', confirmationIntentPrompt);
+            const latestBooking = await models.Booking.findOne({
+                where: { sessionId: conversationSession.sessionId },
+                order: [['createdAt', 'DESC']]
+            });
+            if (confirmationIntentPromptResponse.choices[0].message.content.toLowerCase().includes('yes')) {
+                // Retrieve latest booking for the user
                 if (latestBooking && latestBooking.status === 'awaiting'){
                     // Simulate room booking
                     const bookingResponse = await createRoomBooking(latestBooking.roomId, latestBooking.fullName, latestBooking.email, latestBooking.nights);
 
                     if (bookingResponse){
-                        const finalBookingDetails = await models.Booking.update({ status: 'confirmed' }, {
+                        await models.Booking.update({ status: 'confirmed' }, {
                             where: { bookingId: latestBooking.bookingId }
                         });
-                        const botResponse = `
+        
+                        const finalBookingDetails = await models.Booking.findOne({
+                            where: { bookingId: latestBooking.bookingId }
+                        });
+        
+                        botResponse = `
                             Congratulations ${finalBookingDetails.fullName} 🎉!
                             
                             Your booking is confirmed! Here are your booking details:
@@ -214,11 +287,7 @@ const processUserMessage = async (req, res) => {
                 }
                 newState = 'initial';
             }
-            else if (message.toLowerCase().trim() === 'cancel'){
-                const latestBooking = await models.Booking.findOne({
-                    where: { userId },
-                    order: [['createdAt', 'DESC']]
-                });
+            else {
                 if (latestBooking && latestBooking.status === 'awaiting'){
                     await models.Booking.update({ status: 'cancelled' }, {
                         where: { bookingId: latestBooking.bookingId }
@@ -226,9 +295,6 @@ const processUserMessage = async (req, res) => {
                     botResponse = "Your booking has been cancelled. If you need any further assistance, feel free to ask.";
                 }
                 newState = 'initial';
-            }else {
-                botResponse = "Please type 'confirm' to proceed with the booking or 'cancel' to cancel the booking.";
-                newState = 'awaiting_confirmation';
             }
         }
         await models.ChatInteraction.create({

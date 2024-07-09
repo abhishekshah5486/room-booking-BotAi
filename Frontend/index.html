@@ -1,3 +1,36 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <title>Bot9 Palace ChatBot</title>
+</head>
+<body>
+    <div class="chat-bot-container">
+        <div class="chat-bot-header">
+            <div class="chat-bot-header-content">
+                <h3>Bot9 Support</h3>
+                <p>replies instantly...</p>
+            </div>
+        </div>
+        <div class="chat-window" id="chat-window"></div>
+        <div class="chat-input-container">
+            <div class="chat-input">
+                <input type="text" id="user-input" placeholder="Write a reply..." onkeydown="if(event.key === 'Enter') sendMessage()">
+                <button onclick="sendMessage()">Send</button>
+            </div>
+        </div>
+    </div>
+
+</body>
+<script src="script.js"></script>
+</html>
+
+
+
 <!-- <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -55,33 +88,3 @@
     <script src="script.js"></script>
 </body>
 </html> -->
-
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <title>Bot9 Palace ChatBot</title>
-</head>
-<body>
-    <div class="chat-bot-container">
-        <div class="chat-bot-header">
-            <div class="chat-bot-header-content">
-                <h3>Bot9 Support</h3>
-                <p>replies instantly...</p>
-            </div>
-        </div>
-        <div class="chat-window" id="chat-window"></div>
-        <div class="chat-input-container">
-            <div class="chat-input">
-                <input type="text" id="user-input" placeholder="Write a reply..." onkeydown="if(event.key === 'Enter') sendMessage()">
-                <button onclick="sendMessage()">Send</button>
-            </div>
-        </div>
-    </div>
-
-</body>
-<script src="script.js"></script>
-</html>

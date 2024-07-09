@@ -11,9 +11,9 @@ ConversationSession.init({
     },  
     state: {
         type: DataTypes.ENUM,
-        values: ['initial', 'awaiting_room_selection', 'awaiting_confirmation', 'awaiting_user_email', 'awaiting_user_name'],
+        values: ['start', 'initial', 'awaiting_room_selection', 'awaiting_confirmation', 'awaiting_user_email', 'awaiting_user_name', 'awaiting_nights_selection'],
         allowNull: false,
-        defaultValue: 'awaiting_user_name'
+        defaultValue: 'start'
     },
     timestamp: {
         type: DataTypes.DATE,
