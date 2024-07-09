@@ -69,11 +69,19 @@ const processUserMessage = async (req, res) => {
     const message = req.body.message;
 
     try {
-        let conversationSession = await models.ConversationSession.findOne({where: {sessionId: sessionId}});
-        if (!conversationSession){
+        let conversationSession;
+
+        if (sessionId) {
+            // Search for existing session if sessionId is provided
+            conversationSession = await models.ConversationSession.findOne({ where: { sessionId: sessionId } });
+            if (!conversationSession) {
+                throw new Error('Invalid sessionId provided.');
+            }
+        } else {
+            // Create a new session if sessionId is not provided
             conversationSession = await models.ConversationSession.create({});
-            sessionId = conversationSession.sessionId;
         }
+        sessionId = conversationSession.sessionId;
         const currentState = conversationSession.state;
 
         let botResponse;
